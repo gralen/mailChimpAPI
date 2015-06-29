@@ -5,10 +5,10 @@ This a bare-bones wrapper for the MailChimp API v3 ( REST ). Since the v3 api is
 As it currently stands, only one API endpoint has been added.
 
 ### Sample usage
-
+```
 mc = new MailchimpAPI(	apiKey="PutYourAPIKEYHere", serviceURL="https://<dc>.api.mailchimp.com/3.0/");
 members = mc.getListMembers(listId="MailListIDHere",debug=false);
 writeDump(var="#members#");
-
+```
 ### For more details see
 http://kb.mailchimp.com/api/article/api-3-overview
