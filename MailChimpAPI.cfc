@@ -7,6 +7,10 @@
 */
 
 component extends="APIHelpers" {
+	this.STATUS_SUBSCRIBED = "subscribed";
+	this.STATUS_UNSUBSCRIBED = "unsubscribed";
+	this.STATUS_CLEANED = "cleaned";
+
 	public any function init(string apiKey,string serviceURL,numeric httpTimeout){
 		super.init();
 		setServiceURL(arguments.serviceURL);		
@@ -16,13 +20,26 @@ component extends="APIHelpers" {
 		}
 		return this;
 	}	
-	public struct function getLists(debug){
+	public struct function getLists(boolean debug=false){
 		return apiCall("/lists","GET",Arguments.debug);
 	}
-	public struct function getListMembers(listId:string,debug){		
-		return apiCall("/lists/#arguments.listId#/members","GET",Arguments.debug);		
+	public struct function getListMembers(required string listId,boolean debug=false){		
+		return apiCall("/lists/#arguments.listId#/members","GET",{},Arguments.debug);		
 	}
-	public struct function manualAPICall(required string RESTEndPoint,required string method,required boolean debug){
-		return apiCall(arguments.RESTEndPoint,arguments.method,arguments.debug);
+
+	// http://kb.mailchimp.com/api/article/how-to-manage-subscribers
+	public struct function addMember(required string listId, required string email,required string status,required struct mergeFields){		
+		var requestBody = {
+			email_address = Arguments.email,
+			status = Arguments.status,
+			merge_fields = Arguments.mergeFields
+		};
+		return apiCall("/lists/#arguments.listId#/members","POST",requestBody,Arguments.debug);		
+	}
+	public any function getMember(required string listId, required string memberHash){		
+		return apiCall("/lists/#arguments.listId#/members/#arguments.memberHash#","GET",{},Arguments.debug);
+	}
+	public struct function manualAPICall(required string RESTEndPoint,required string method,required boolean debug=false){
+		return apiCall(arguments.RESTEndPoint,arguments.method,{},Arguments.debug);
 	}
 }

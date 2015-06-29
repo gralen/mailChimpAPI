@@ -14,7 +14,7 @@ component accessors=true {
 	public function init(){
 		return this;
 	}
-	private struct function apiCall(required string RESTEndPoint,required string method,boolean debug){
+	private struct function apiCall(required string RESTEndPoint,required string method,struct requestBody,boolean debug){
 		var loc={};		
 		loc.httpRequest = new http(	url="#getServiceURL()#/#arguments.RESTEndPoint#",
 									method=arguments.method,
@@ -22,17 +22,19 @@ component accessors=true {
 									);
 
 		loc.httpRequest.addParam(type="header",name="Authorization", value="apikey #getApiKey()#");
-		loc.result = loc.httpRequest.send();
-		if (isRequestSuccesful( loc.result ) ){
-			return deserializeJSON(loc.result.getPrefix().filecontent);
+		if (arguments.method eq "POST" or arguments.method eq "PUT"){
+			loc.httpRequest.addParam(type="body", value=SerializeJSON(Arguments.requestBody));
 		}
-		else {
-			loc.errorLabel="Your #Arguments.method# request for the REST API Endpoint: #Arguments.RESTEndPoint# failed with: #loc.result.getPrefix().errordetail#";
+		loc.result = loc.httpRequest.send(); // Execution suspended until timeout or success
+		loc.errorLabel="Your #Arguments.method# request for the REST API Endpoint: #Arguments.RESTEndPoint# failed with: #loc.result.getPrefix().errordetail#";
+
+		if ( isRequestTimeout( loc.result ) ){
 			if (Arguments.debug){
 				writeDump(var=loc.result.getPrefix(),label=loc.errorLabel);
 			}
 			throw(message="HTTP Error #loc.result.getPrefix().statuscode#",detail="ERROR: #loc.errorLabel#");
 		}
+		return deserializeJSON(loc.result.getPrefix().filecontent);
 	}
 	private void function writeDebugOutput(httpResult){
 		writeOutputLn("Error Detail: " & arguments.httpResult.errordetail );	
@@ -49,5 +51,10 @@ component accessors=true {
 		}
 		return false;
 	}
-
+	private boolean function isRequestTimeout(httpResult:org.railo.cfml.Result){
+		if ( Val(arguments.httpResult.getPrefix().statuscode) eq 408 ){
+			return true;
+		}
+		return false;
+	}
 }
