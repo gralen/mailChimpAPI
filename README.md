@@ -56,7 +56,7 @@ if (member.getStatus() eq 200){
 									mergeFields={
     									FAVCOLOR: "Green" 							
 									}
-								}
+								);
 }
 ```
 ### For more details see
