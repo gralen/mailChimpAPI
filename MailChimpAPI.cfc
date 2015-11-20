@@ -6,40 +6,61 @@
 * 
 */
 
-component extends="APIHelpers" {
+component extends="APIHelpers" accessors=true {
+	property name="debug" type="boolean" setter="true";
+
 	this.STATUS_SUBSCRIBED = "subscribed";
 	this.STATUS_UNSUBSCRIBED = "unsubscribed";
 	this.STATUS_CLEANED = "cleaned";
+	this.STATUS_PENDING = "pending";
 
-	public any function init(string apiKey,string serviceURL,numeric httpTimeout){
+	public any function init(string apiKey,string serviceURL,numeric httpTimeout,boolean debug=false){
 		super.init();
+		processingdirective preserveCase="true";
 		setServiceURL(arguments.serviceURL);		
 		setApiKey(arguments.apikey);
+		setDebug(arguments.debug);
 		if (Val(Arguments.httpTimeout) gt 0){
 			setHttpTimeout(arguments.httpTimeout);
 		}
 		return this;
 	}	
-	public struct function getLists(boolean debug=false){
-		return apiCall("/lists","GET",Arguments.debug);
+	public struct function getLists(){
+		return apiCall("/lists","GET",getDebug());
 	}
-	public struct function getListMembers(required string listId,boolean debug=false){		
-		return apiCall("/lists/#arguments.listId#/members","GET",{},Arguments.debug);		
+	public struct function getListMembers(required string listId){		
+		return apiCall("/lists/#arguments.listId#/members","GET",{},getDebug());		
 	}
 
 	// http://kb.mailchimp.com/api/article/how-to-manage-subscribers
-	public struct function addMember(required string listId, required string email,required string status,required struct mergeFields){		
+	public APIResponse function addMember(required string listId, required string email, required struct mergeFields){		
 		var requestBody = {
-			email_address = Arguments.email,
-			status = Arguments.status,
+			email_address = lCase(Arguments.email),
+			status = this.STATUS_SUBSCRIBED,
 			merge_fields = Arguments.mergeFields
 		};
-		return apiCall("/lists/#arguments.listId#/members","POST",requestBody,Arguments.debug);		
+		return apiCall("/lists/#arguments.listId#/members","POST",requestBody,getDebug());
 	}
-	public any function getMember(required string listId, required string memberHash){		
-		return apiCall("/lists/#arguments.listId#/members/#arguments.memberHash#","GET",{},Arguments.debug);
+	public APIResponse function updateMember(required string listId, required string email,string status,required struct mergeFields){		
+		var emailMD5 = hashAsMD5(arguments.email);
+		var requestBody = {			
+			merge_fields = Arguments.mergeFields
+		};
+		if (Arguments.status neq ""){
+			requestBody.status = Arguments.status;
+		}
+		return apiCall("/lists/#arguments.listId#/members/#emailMD5#","PATCH",requestBody,getDebug());
 	}
-	public struct function manualAPICall(required string RESTEndPoint,required string method,required boolean debug=false){
-		return apiCall(arguments.RESTEndPoint,arguments.method,{},Arguments.debug);
+	public APIResponse function getMember(required string listId, required string email){		
+		var emailMD5 = hashAsMD5(arguments.email);
+		return apiCall("/lists/#arguments.listId#/members/#emailMD5#","GET",{},getDebug());
+	}
+	public APIResponse function manualAPICall(required string RESTEndPoint,required string method){
+		return apiCall(arguments.RESTEndPoint,arguments.method,{},getDebug());
+	}
+	private string function hashAsMD5(required string t){
+		// Mail Chimp API v3: "we identify your subscribers by the MD5 
+		// hash of the lowercase version of their email address"
+		return hash(lCase(arguments.t),"MD5");
 	}
 }

@@ -14,7 +14,7 @@ component accessors=true {
 	public function init(){
 		return this;
 	}
-	private struct function apiCall(required string RESTEndPoint,required string method,struct requestBody,boolean debug){
+	private struct function apiCall(required string RESTEndPoint,required string method,struct requestBody,boolean debug=false){
 		var loc={};		
 		loc.httpRequest = new http(	url="#getServiceURL()#/#arguments.RESTEndPoint#",
 									method=arguments.method,
@@ -28,13 +28,13 @@ component accessors=true {
 		loc.result = loc.httpRequest.send(); // Execution suspended until timeout or success
 		loc.errorLabel="Your #Arguments.method# request for the REST API Endpoint: #Arguments.RESTEndPoint# failed with: #loc.result.getPrefix().errordetail#";
 
-		if ( isRequestTimeout( loc.result ) ){
+		/*if ( isRequestTimeout( loc.result ) ){
 			if (Arguments.debug){
 				writeDump(var=loc.result.getPrefix(),label=loc.errorLabel);
 			}
 			throw(message="HTTP Error #loc.result.getPrefix().statuscode#",detail="ERROR: #loc.errorLabel#");
-		}
-		return deserializeJSON(loc.result.getPrefix().filecontent);
+		}*/
+		return new APIResponse(loc.result);
 	}
 	private void function writeDebugOutput(httpResult){
 		writeOutputLn("Error Detail: " & arguments.httpResult.errordetail );	
